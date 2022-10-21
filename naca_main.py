@@ -3,12 +3,13 @@ from naca_api import send_pic_url, send_explanation, send_rand_pic
 import telebot
 import configparser
 from telebot import types
+import time
 
 config = configparser.ConfigParser()
 config.read("config.ini")
 
 
-bot = telebot.TeleBot(config["pyrogram"]["api_token"])
+bot = telebot.TeleBot(config["space_esteticks_bot"]["api_token"])
 
 
 @bot.message_handler(commands=['start'])
@@ -26,8 +27,15 @@ def callback_inline(call):
             inline_markup = types.InlineKeyboardMarkup()
             button1 = types.InlineKeyboardButton("ЖМИ", callback_data='pic')
             inline_markup.add(button1)
-            url, exp = send_rand_pic()
-            bot.edit_message_media(message_id=call.message.message_id, chat_id=call.message.chat.id, media=types.InputMediaPhoto(url,caption= exp),reply_markup=inline_markup)
+            flag = 0
+            while (flag == 0) :
+                try:
+                    flag = 1
+                    url, exp = send_rand_pic()
+                    bot.edit_message_media(message_id=call.message.message_id, chat_id=call.message.chat.id, media=types.InputMediaPhoto(url,caption= exp),reply_markup=inline_markup)
+                except: 
+                    flag = 0
+                    time.sleep(0.5)
     except Exception as e:
         print(repr(e))
 

@@ -44,5 +44,6 @@ def send_rand_pic():
         except: 
             flag = 0
             time.sleep(0.5)
+            if (len(exp) > 1024): exp = exp[:1023]
     return(url,exp)
 
