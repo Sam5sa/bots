@@ -6,6 +6,7 @@ import configparser
 
 config = configparser.ConfigParser()
 config.read("config.ini")
+
 api_key = config["naca_api"]["key"]
 
 
