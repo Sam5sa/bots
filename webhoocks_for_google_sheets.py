@@ -9,6 +9,6 @@ config.read("config.ini")
 def post_req(name):
     endpoint = config["google_sheets_app"]["endpoint"]
 
-    data = {'user_name':name}
+    data = {'user_name':name, "phone": "Samara", "product": "clientDB"}
     response = requests.post(endpoint, json=data)
     #print(response)

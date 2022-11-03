@@ -25,6 +25,11 @@ def start(message):
 @bot.message_handler()
 def get_text(message):
     post_req(message.text)
+    mess = "Ваш заказ принят"
+    inline_markup = types.InlineKeyboardMarkup()
+    button1 = types.InlineKeyboardButton("В меню", callback_data='menu')
+    inline_markup.add(button1)
+    bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup = inline_markup)
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
@@ -65,11 +70,6 @@ def callback_inline(call):
             inline_markup.add(button1, button2)
             bot.edit_message_text(message_id=call.message.message_id, chat_id=call.message.chat.id, text=mess, parse_mode='html', reply_markup = inline_markup)
 
-        if call.data == "order_consult":
-            mess = "Напишите как к вам можно обращаться"
-            bot.send_message(call.message.chat.id, mess, parse_mode='html')
-            
-
         if call.data == 'CRM':
             mess = 'Теряешь клиентов в воронке продаж? НЕ УПУСТИ не одного с нашей системой управления клиентами!'
             inline_markup = types.InlineKeyboardMarkup()
@@ -85,6 +85,10 @@ def callback_inline(call):
             button2 = types.InlineKeyboardButton("К услугам", callback_data='deal_list')
             inline_markup.add(button1, button2)
             bot.edit_message_text(message_id=call.message.message_id, chat_id=call.message.chat.id, text=mess, parse_mode='html', reply_markup = inline_markup)
+
+        if call.data == "order_clientDB":
+            mess = "Напишите как к вам можно обращаться"
+            bot.send_message(call.message.chat.id, mess, parse_mode='html')
 
         if call.data == 'meetings':
             mess = 'Постоянной выгорание и усталость от невозможности успеть всё? Не пропусти не одной важной встречи и распланируй свой день с помощью автоматического календаря!'
