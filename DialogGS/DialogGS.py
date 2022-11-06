@@ -22,6 +22,10 @@ class User:
         self.product = None
 
 
+@bot.message_handler(commands=['clear'])
+def clean(message):
+    clear(message, 2)
+
 @bot.message_handler(commands=['start'])
 def start(message):
     mess = f'Здравствуйте, {message.from_user.first_name} {message.from_user.last_name}. Спасибо, что проявили к нам интерес)\nМы предоставляем услуги автоматизации бизнес-процессов.\nС радостью помогу вам:\nопределиться с выбором услуги\nрасскажу о компании\nотвечу на интересующие вопросы)'
@@ -45,6 +49,41 @@ def get_text(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
+
+    def collect_client_info(product):
+        def name_step(message):
+                try:
+                    chat_id = message.chat.id
+                    name = message.text
+                    id = message
+                    user = User(name)
+                    user.product = product
+                    user_dict[chat_id] = user
+                    msg = bot.send_message(chat_id, 'Пожалуйста, укажите телефон для связи с вами')
+                    bot.register_next_step_handler(msg, phone_step)
+                except Exception as e:
+                    bot.reply_to(message, 'oooops')
+
+        def phone_step(message):
+            try:
+                chat_id = message.chat.id
+                phone = message.text
+                user = user_dict[chat_id]
+                user.phone = str(phone)
+                clear(message,5)
+                inline_markup = types.InlineKeyboardMarkup()
+                button1 = types.InlineKeyboardButton("Подтвердить", callback_data='confurm_order')
+                button2 = types.InlineKeyboardButton("Изменить данные", callback_data='order_clientDB')
+                inline_markup.add(button1, button2)
+                msg = "Уважаемый " + user.name + '\nВаш заказ: ' + user.product + '\nВ ближайшее время с вами свяжутся по телефону:' + user.phone
+                bot.send_message(chat_id,  msg, parse_mode='html', reply_markup = inline_markup)
+            except Exception as e:
+                bot.reply_to(message, 'oooops')
+
+        mess = "Напишите как к вам можно обращаться"
+        mesg = bot.send_message(call.message.chat.id, mess, parse_mode='html')
+        bot.register_next_step_handler(mesg,name_step)
+
     try:
         if call.data == 'info':
             mess = 'Наша компания заботится о качестве оказываемых услуг.\nЛюбой заказ мы начинаем с БЕСПЛАТНОЙ консультации на которой разберём на атомы бизнес-логику ВАШЕГО дела.\nНа ней мы определим процессы, подлежащие оптимизации и ПОДАРИМ бота-визитку для вашего бизнеса!'
@@ -82,6 +121,9 @@ def callback_inline(call):
             inline_markup.add(button1, button2)
             bot.edit_message_text(message_id=call.message.message_id, chat_id=call.message.chat.id, text=mess, parse_mode='html', reply_markup = inline_markup)
 
+        if call.data == "order_consult":
+            collect_client_info(call.data[6:])
+
         if call.data == 'CRM':
             mess = 'Теряете клиентов в воронке продаж?\nНЕ УПУСТИТЕ не одного с нашей системой управления клиентами!'
             inline_markup = types.InlineKeyboardMarkup()
@@ -89,6 +131,9 @@ def callback_inline(call):
             button2 = types.InlineKeyboardButton("К услугам", callback_data='deal_list')
             inline_markup.add(button1, button2)
             bot.edit_message_text(message_id=call.message.message_id, chat_id=call.message.chat.id, text=mess, parse_mode='html', reply_markup = inline_markup)
+
+        if call.data == "order_CRM":
+            collect_client_info(call.data[6:])
 
         if call.data == 'clientDB':
             mess = 'Пользуетесь таблицами для ведения книги клиентов? \nМЫ сделаем процесс заполнения автоматическим, смотрите и наслаждайтесь!'
@@ -99,50 +144,7 @@ def callback_inline(call):
             bot.edit_message_text(message_id=call.message.message_id, chat_id=call.message.chat.id, text=mess, parse_mode='html', reply_markup = inline_markup)
 
         if call.data == "order_clientDB":
-            def name_step(message):
-                try:
-                    chat_id = message.chat.id
-                    name = message.text
-                    id = message
-                    user = User(name)
-                    user.product = "clientDB"
-                    user_dict[chat_id] = user
-                    msg = bot.send_message(chat_id, 'Пожалуйста, укажите телефон для связи с вами')
-                    bot.register_next_step_handler(msg, phone_step)
-                except Exception as e:
-                    bot.reply_to(message, 'oooops')
-
-            def phone_step(message):
-                try:
-                    chat_id = message.chat.id
-                    phone = message.text
-                    user = user_dict[chat_id]
-                    user.phone = str(phone)
-                    clear(message,5)
-                    inline_markup = types.InlineKeyboardMarkup()
-                    button1 = types.InlineKeyboardButton("Подтвердить", callback_data='confurm_order')
-                    button2 = types.InlineKeyboardButton("Изменить данные", callback_data='order_clientDB')
-                    inline_markup.add(button1, button2)
-                    msg = "Уважаемый " + user.name + '\nВаш заказ: ' + user.product + '\nВ ближайшее время с вами свяжутся по телефону:' + user.phone
-                    bot.send_message(chat_id,  msg, parse_mode='html', reply_markup = inline_markup)
-                except Exception as e:
-                    bot.reply_to(message, 'oooops')
-
-            mess = "Напишите как к вам можно обращаться"
-            mesg = bot.send_message(call.message.chat.id, mess, parse_mode='html')
-            bot.register_next_step_handler(mesg,name_step)  
-
-        if call.data == 'confurm_order':
-            user = user_dict[call.message.chat.id]
-            print(str(call.message.from_user.id))
-            post_req(str(call.message.from_user.id),user.name,user.phone,user.product)
-
-            mess = "Ваш заказ успешно оформлен"
-            inline_markup = types.InlineKeyboardMarkup()
-            button1 = types.InlineKeyboardButton("В меню", callback_data='menu')
-            inline_markup.add(button1)
-            bot.edit_message_text(message_id=call.message.message_id, chat_id=call.message.chat.id, text=mess, parse_mode='html', reply_markup = inline_markup)
-            
+            collect_client_info(call.data[6:])
 
         if call.data == 'meetings':
             mess = 'Постоянной выгорание и усталость от невозможности успеть всё? Не пропустите не одной важной встречи и распланируйте свой день с помощью автоматического календаря!'
@@ -152,6 +154,18 @@ def callback_inline(call):
             inline_markup.add(button1, button2)
             bot.edit_message_text(message_id=call.message.message_id, chat_id=call.message.chat.id, text=mess, parse_mode='html', reply_markup = inline_markup)
 
+        if call.data == "order_meetings":
+            collect_client_info(call.data[6:])
+
+        if call.data == 'confurm_order':
+            user = user_dict[call.message.chat.id]
+            post_req(str(call.message.from_user.id),user.name,user.phone,user.product)
+
+            mess = "Ваш заказ успешно оформлен"
+            inline_markup = types.InlineKeyboardMarkup()
+            button1 = types.InlineKeyboardButton("В меню", callback_data='menu')
+            inline_markup.add(button1)
+            bot.edit_message_text(message_id=call.message.message_id, chat_id=call.message.chat.id, text=mess, parse_mode='html', reply_markup = inline_markup)  
         
         
     except Exception as e:

@@ -5,7 +5,6 @@ from telebot import types
 config = configparser.ConfigParser()
 config.read("config.ini")
 
-
 bot = telebot.TeleBot(config["DialogGS_bot"]["api_token"])
 
 def clear(message, n):
