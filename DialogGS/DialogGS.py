@@ -11,6 +11,15 @@ config.read("config.ini")
 
 bot = telebot.TeleBot(config["DialogGS_bot"]["api_token"])
 
+user_dict = {}
+
+
+class User:
+    def __init__(self, name):
+        self.name = name
+        self.phone = None
+        self.product = None
+
 
 @bot.message_handler(commands=['start'])
 def start(message):
@@ -22,6 +31,18 @@ def start(message):
     inline_markup.add(button1, button2,button3)
     bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup = inline_markup)
 
+@bot.message_handler(commands=['clear'])
+def clear(message):
+    i=0
+    flag =0
+    while (flag<3):
+        try:
+            bot.delete_message(message.chat.id,message.id-i)
+            i += 1
+            flag +=1
+        except: i += 1
+
+'''
 @bot.message_handler()
 def get_text(message):
     post_req(message.text)
@@ -30,12 +51,13 @@ def get_text(message):
     button1 = types.InlineKeyboardButton("В меню", callback_data='menu')
     inline_markup.add(button1)
     bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup = inline_markup)
+'''
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_inline(call):
     try:
         if call.data == 'info':
-            mess = 'Наша компания заботится о качестве оказываемых услуг.\nЛюбой заказ мы начинаем с БЕСПЛАТНОЙ консультации на которой разберём на атомы бизнес-логику ТВОЕГО дела.\nНа ней мы определим процессы, подлежащие оптимизации и ПОДАРИМ бота-визитку для вашего бизнеса!'
+            mess = 'Наша компания заботится о качестве оказываемых услуг.\nЛюбой заказ мы начинаем с БЕСПЛАТНОЙ консультации на которой разберём на атомы бизнес-логику ВАШЕГО дела.\nНа ней мы определим процессы, подлежащие оптимизации и ПОДАРИМ бота-визитку для вашего бизнеса!'
             inline_markup = types.InlineKeyboardMarkup()
             button1 = types.InlineKeyboardButton("В меню", callback_data='menu')
             inline_markup.add(button1)
@@ -63,7 +85,7 @@ def callback_inline(call):
             bot.edit_message_text(message_id=call.message.message_id, chat_id=call.message.chat.id, text=mess, parse_mode='html', reply_markup = inline_markup)
 
         if call.data == 'consult':
-            mess = 'Разберём на атомы бизнес-логику ТВОЕГО дела.\nНа ней мы определим процессы, подлежащие оптимизации и ПОДАРИМ бота-визитку для вашего бизнеса!'
+            mess = 'Разберём на атомы бизнес-логику ВАШЕГО дела.\nНа ней мы определим процессы, подлежащие оптимизации и ПОДАРИМ бота-визитку для вашего бизнеса!'
             inline_markup = types.InlineKeyboardMarkup()
             button1 = types.InlineKeyboardButton("Заказать", callback_data='order_consult')
             button2 = types.InlineKeyboardButton("К услугам", callback_data='deal_list')
@@ -71,7 +93,7 @@ def callback_inline(call):
             bot.edit_message_text(message_id=call.message.message_id, chat_id=call.message.chat.id, text=mess, parse_mode='html', reply_markup = inline_markup)
 
         if call.data == 'CRM':
-            mess = 'Теряешь клиентов в воронке продаж? НЕ УПУСТИ не одного с нашей системой управления клиентами!'
+            mess = 'Теряете клиентов в воронке продаж?\nНЕ УПУСТИТЕ не одного с нашей системой управления клиентами!'
             inline_markup = types.InlineKeyboardMarkup()
             button1 = types.InlineKeyboardButton("Заказать", callback_data='order_CRM')
             button2 = types.InlineKeyboardButton("К услугам", callback_data='deal_list')
@@ -79,7 +101,7 @@ def callback_inline(call):
             bot.edit_message_text(message_id=call.message.message_id, chat_id=call.message.chat.id, text=mess, parse_mode='html', reply_markup = inline_markup)
 
         if call.data == 'clientDB':
-            mess = 'Пользуешся таблицами для ведения книги клиентов? МЫ сделаем процесс заполнения автоматическим, смотри и радуйся!'
+            mess = 'Пользуетесь таблицами для ведения книги клиентов? \nМЫ сделаем процесс заполнения автоматическим, смотрите и наслаждайтесь!'
             inline_markup = types.InlineKeyboardMarkup()
             button1 = types.InlineKeyboardButton("Заказать", callback_data='order_clientDB')
             button2 = types.InlineKeyboardButton("К услугам", callback_data='deal_list')
@@ -87,11 +109,34 @@ def callback_inline(call):
             bot.edit_message_text(message_id=call.message.message_id, chat_id=call.message.chat.id, text=mess, parse_mode='html', reply_markup = inline_markup)
 
         if call.data == "order_clientDB":
+            def name_step(message):
+                #try:
+                    chat_id = message.chat.id
+                    name = message.text
+                    user = User(name)
+                    user.product = "clientDB"
+                    user_dict[chat_id] = user
+                    msg = bot.send_message(chat_id, 'Пожалуйста, укажите телефон для связи с вами')
+                    bot.register_next_step_handler(msg, phone_step)
+                #except Exception as e:
+                 #   bot.reply_to(message, 'oooops')
+
+            def phone_step(message):
+                try:
+                    chat_id = message.chat.id
+                    phone = message.text
+                    user = user_dict[chat_id]
+                    user.phone = phone
+                    bot.send_message(chat_id,  "Уважаемый " + user.name + '\nВаш заказ: ' + user.product + '\nВ ближайшее время с вами свяжутся по телефону:' + str(user.phone))
+                except Exception as e:
+                    bot.reply_to(message, 'oooops')
+
             mess = "Напишите как к вам можно обращаться"
-            bot.send_message(call.message.chat.id, mess, parse_mode='html')
+            mesg = bot.send_message(call.message.chat.id, mess, parse_mode='html')
+            bot.register_next_step_handler(mesg,name_step)  
 
         if call.data == 'meetings':
-            mess = 'Постоянной выгорание и усталость от невозможности успеть всё? Не пропусти не одной важной встречи и распланируй свой день с помощью автоматического календаря!'
+            mess = 'Постоянной выгорание и усталость от невозможности успеть всё? Не пропустите не одной важной встречи и распланируйте свой день с помощью автоматического календаря!'
             inline_markup = types.InlineKeyboardMarkup()
             button1 = types.InlineKeyboardButton("Заказать", callback_data='order_meetings')
             button2 = types.InlineKeyboardButton("К услугам", callback_data='deal_list')
