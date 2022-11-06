@@ -1,4 +1,5 @@
 from webhoocks_for_google_sheets import post_req
+from addon_fx import clear
 
 import telebot
 import configparser
@@ -30,17 +31,6 @@ def start(message):
     button3 = types.InlineKeyboardButton("задать вопрос", callback_data='question')
     inline_markup.add(button1, button2,button3)
     bot.send_message(message.chat.id, mess, parse_mode='html', reply_markup = inline_markup)
-
-@bot.message_handler(commands=['clear'])
-def clear(message):
-    i=0
-    flag =0
-    while (flag<3):
-        try:
-            bot.delete_message(message.chat.id,message.id-i)
-            i += 1
-            flag +=1
-        except: i += 1
 
 '''
 @bot.message_handler()
@@ -110,30 +100,49 @@ def callback_inline(call):
 
         if call.data == "order_clientDB":
             def name_step(message):
-                #try:
+                try:
                     chat_id = message.chat.id
                     name = message.text
+                    id = message
                     user = User(name)
                     user.product = "clientDB"
                     user_dict[chat_id] = user
                     msg = bot.send_message(chat_id, 'Пожалуйста, укажите телефон для связи с вами')
                     bot.register_next_step_handler(msg, phone_step)
-                #except Exception as e:
-                 #   bot.reply_to(message, 'oooops')
+                except Exception as e:
+                    bot.reply_to(message, 'oooops')
 
             def phone_step(message):
                 try:
                     chat_id = message.chat.id
                     phone = message.text
                     user = user_dict[chat_id]
-                    user.phone = phone
-                    bot.send_message(chat_id,  "Уважаемый " + user.name + '\nВаш заказ: ' + user.product + '\nВ ближайшее время с вами свяжутся по телефону:' + str(user.phone))
+                    user.phone = str(phone)
+                    clear(message,5)
+                    inline_markup = types.InlineKeyboardMarkup()
+                    button1 = types.InlineKeyboardButton("Подтвердить", callback_data='confurm_order')
+                    button2 = types.InlineKeyboardButton("Изменить данные", callback_data='order_clientDB')
+                    inline_markup.add(button1, button2)
+                    msg = "Уважаемый " + user.name + '\nВаш заказ: ' + user.product + '\nВ ближайшее время с вами свяжутся по телефону:' + user.phone
+                    bot.send_message(chat_id,  msg, parse_mode='html', reply_markup = inline_markup)
                 except Exception as e:
                     bot.reply_to(message, 'oooops')
 
             mess = "Напишите как к вам можно обращаться"
             mesg = bot.send_message(call.message.chat.id, mess, parse_mode='html')
             bot.register_next_step_handler(mesg,name_step)  
+
+        if call.data == 'confurm_order':
+            user = user_dict[call.message.chat.id]
+            print(str(call.message.from_user.id))
+            post_req(str(call.message.from_user.id),user.name,user.phone,user.product)
+
+            mess = "Ваш заказ успешно оформлен"
+            inline_markup = types.InlineKeyboardMarkup()
+            button1 = types.InlineKeyboardButton("В меню", callback_data='menu')
+            inline_markup.add(button1)
+            bot.edit_message_text(message_id=call.message.message_id, chat_id=call.message.chat.id, text=mess, parse_mode='html', reply_markup = inline_markup)
+            
 
         if call.data == 'meetings':
             mess = 'Постоянной выгорание и усталость от невозможности успеть всё? Не пропустите не одной важной встречи и распланируйте свой день с помощью автоматического календаря!'

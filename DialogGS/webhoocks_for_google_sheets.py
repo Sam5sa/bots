@@ -11,4 +11,4 @@ def post_req(id,name,phone,product):
 
     data = {'id': id, 'user_name' : name, "phone" : phone, "product" : product}
     response = requests.post(endpoint, json=data)
-    #print(response)
+    #return response
