@@ -9,7 +9,11 @@ config.read("config.ini")
 
 api_key = config["naca_api"]["key"]
 
-
+def test():
+    endpoint = "https://api.nasa.gov/planetary/apod"
+    query_params = {"api_key": api_key}
+    response = requests.get(endpoint, params=query_params)
+    return(response.json())
 
 def send_pic_url():
     endpoint = "https://api.nasa.gov/planetary/apod"
@@ -47,3 +51,5 @@ def send_rand_pic():
             if (len(exp) > 1024): exp = exp[:1023]
     return(url,exp)
 
+
+print(test())
